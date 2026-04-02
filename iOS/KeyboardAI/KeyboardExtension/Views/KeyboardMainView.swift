@@ -48,23 +48,23 @@ struct KeyboardMainView: View {
 // MARK: - Processing Bar
 struct ProcessingBar: View {
     @State private var dotCount = 0
-    
+
     var body: some View {
         HStack(spacing: 8) {
             ProgressView()
                 .scaleEffect(0.8)
                 .tint(.kbAccent)
-            
+
             Text("AI is thinking" + String(repeating: ".", count: dotCount))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.kbAccent)
-                .animation(.none, value: dotCount)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
-        .background(Color.kbAccentLight)
-        .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
+        .background(Color.kbAccent.opacity(0.12))
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 400_000_000)
                 dotCount = (dotCount + 1) % 4
             }
         }

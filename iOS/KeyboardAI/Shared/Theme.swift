@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Color Theme
 extension Color {
-    static let kbPrimary = Color("AccentColor", bundle: nil)
+    static let kbPrimary = Color(red: 0.35, green: 0.47, blue: 1.0)
     static let kbBackground = Color(UIColor.systemBackground)
     static let kbSecondaryBg = Color(UIColor.secondarySystemBackground)
     static let kbTertiaryBg = Color(UIColor.tertiarySystemBackground)

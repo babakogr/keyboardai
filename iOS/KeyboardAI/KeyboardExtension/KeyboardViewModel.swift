@@ -41,8 +41,13 @@ final class KeyboardViewModel: ObservableObject {
     private let aiService = AIService.shared
     
     init() {
-        let defaults = UserDefaults(suiteName: Configuration.appGroupIdentifier)
-        self.selectedLanguage = defaults?.string(forKey: Configuration.udKeySelectedLanguage) ?? "EN"
+        // Defensive: UserDefaults(suiteName:) can return nil if app group isn't configured
+        if let defaults = UserDefaults(suiteName: Configuration.appGroupIdentifier),
+           let lang = defaults.string(forKey: Configuration.udKeySelectedLanguage) {
+            self.selectedLanguage = lang
+        } else {
+            self.selectedLanguage = "EN"
+        }
     }
     
     // MARK: - Current Text from Proxy
