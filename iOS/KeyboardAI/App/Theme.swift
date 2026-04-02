@@ -72,7 +72,7 @@ struct CardModifier: ViewModifier {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold, design: .rounded))
             .foregroundColor(.white)

@@ -13,7 +13,7 @@ workflows:
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-      xcode: latest
+      xcode: "16.3"
 
     triggering:
       events:
@@ -70,7 +70,7 @@ workflows:
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-      xcode: latest
+      xcode: "16.3"
 
     scripts:
       - name: Install XcodeGen
@@ -141,7 +141,7 @@ workflows:
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-      xcode: latest
+      xcode: "16.3"
 
     scripts:
       - name: Install XcodeGen
@@ -190,7 +190,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.keyboardai.app
-      xcode: latest
+      xcode: "16.3"
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
