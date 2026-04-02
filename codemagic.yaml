@@ -84,18 +84,7 @@ workflows:
 
       - name: Generate placeholder AppIcon
         script: |
-          python3 -c "
-import struct, zlib
-def png(w, h, r, g, b):
-    def chunk(t, d):
-        c = zlib.crc32(t+d) & 0xffffffff
-        return struct.pack('>I',len(d))+t+d+struct.pack('>I',c)
-    ihdr = struct.pack('>IIBBBBB',w,h,8,2,0,0,0)
-    raw = b''.join(b'\x00'+bytes([r,g,b])*w for _ in range(h))
-    return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',ihdr)+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
-open('iOS/KeyboardAI/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png','wb').write(png(1024,1024,89,120,255))
-"
-          echo "✅ AppIcon.png generated"
+          python3 iOS/generate_icon.py
 
       - name: Build unsigned IPA for real device
         script: |
