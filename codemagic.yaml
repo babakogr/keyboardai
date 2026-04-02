@@ -2,7 +2,7 @@ workflows:
 
   # ─────────────────────────────────────────────────────────────────
   # WORKFLOW 1: Simulator build — NO signing needed, free to run
-  # Use this first to verify the project compiles correctly
+  # Uses XcodeGen to auto-generate the real .xcodeproj from project.yml
   # ─────────────────────────────────────────────────────────────────
   ios-simulator:
     name: KeyboardAI Simulator Build
@@ -23,6 +23,17 @@ workflows:
           include: true
 
     scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project from spec
+        script: |
+          cd iOS
+          xcodegen generate --spec project.yml
+          echo "✅ Xcode project generated successfully"
+          ls -la KeyboardAI.xcodeproj/
+
       - name: Build for simulator (no signing)
         script: |
           xcodebuild \
@@ -41,7 +52,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - kibrisdiscovery@gmail.com
         notify:
           success: true
           failure: true
@@ -68,6 +79,15 @@ workflows:
       xcode: latest
 
     scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project from spec
+        script: |
+          cd iOS
+          xcodegen generate --spec project.yml
+
       - name: Set up automatic code signing
         script: |
           xcode-project use-profiles
