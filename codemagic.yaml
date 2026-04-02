@@ -58,7 +58,72 @@ workflows:
           failure: true
 
   # ─────────────────────────────────────────────────────────────────
-  # WORKFLOW 2: Real device .ipa — needs Apple Developer account
+  # WORKFLOW 2: Unsigned IPA — NO Apple Developer account needed
+  # Download the .ipa → sign with Sideloadly (free Apple ID) → install
+  # ─────────────────────────────────────────────────────────────────
+  ios-unsigned-ipa:
+    name: KeyboardAI Unsigned IPA (Sideloadly)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      vars:
+        XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
+        XCODE_SCHEME: "KeyboardAI"
+      xcode: latest
+
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          brew install xcodegen
+
+      - name: Generate Xcode project from spec
+        script: |
+          cd iOS
+          xcodegen generate --spec project.yml
+
+      - name: Build unsigned IPA for real device
+        script: |
+          # Build for real device without signing
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            -derivedDataPath build \
+            clean build
+
+      - name: Package into .ipa file
+        script: |
+          # Find the .app and package it as .ipa
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" | head -1)
+          echo "Found app at: $APP_PATH"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r KeyboardAI-unsigned.ipa Payload/
+          rm -rf Payload
+          echo "✅ IPA created: KeyboardAI-unsigned.ipa"
+          ls -lh KeyboardAI-unsigned.ipa
+
+    artifacts:
+      - KeyboardAI-unsigned.ipa
+
+    publishing:
+      email:
+        recipients:
+          - kibrisdiscovery@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # ─────────────────────────────────────────────────────────────────
+  # WORKFLOW 3: Real device .ipa — needs Apple Developer account
   # Connect Apple Developer in Codemagic → Team → Integrations first
   # ─────────────────────────────────────────────────────────────────
   ios-development:
