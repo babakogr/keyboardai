@@ -3,16 +3,23 @@ import SwiftUI
 @main
 struct KeyboardAIApp: App {
     @StateObject private var appState = AppState()
-    
+
     var body: some Scene {
         WindowGroup {
-            if appState.hasCompletedOnboarding {
-                MainView()
-                    .environmentObject(appState)
-            } else {
-                OnboardingView()
-                    .environmentObject(appState)
+            Group {
+                if !appState.hasCompletedOnboarding {
+                    OnboardingView()
+                        .environmentObject(appState)
+                } else if !appState.hasSeenPaywall && !AuthManager.shared.isPro {
+                    ProUpgradeView(isHardPaywall: true)
+                        .environmentObject(appState)
+                } else {
+                    MainView()
+                        .environmentObject(appState)
+                }
             }
+            .animation(.easeInOut(duration: 0.45), value: appState.hasCompletedOnboarding)
+            .animation(.easeInOut(duration: 0.45), value: appState.hasSeenPaywall)
         }
     }
 }
@@ -21,24 +28,29 @@ struct KeyboardAIApp: App {
 final class AppState: ObservableObject {
     @Published var hasCompletedOnboarding: Bool
     @Published var userTier: String
-    @Published var isKeyboardEnabled: Bool = false
-    
+    @Published var hasSeenPaywall: Bool {
+        didSet {
+            UserDefaults(suiteName: Configuration.appGroupIdentifier)?
+                .set(hasSeenPaywall, forKey: "kbHasSeenPaywall")
+        }
+    }
+
     init() {
-        let defaults = UserDefaults(suiteName: Configuration.appGroupIdentifier)
-        self.hasCompletedOnboarding = defaults?.bool(forKey: Configuration.udKeyOnboardingCompleted) ?? false
+        let ud = UserDefaults(suiteName: Configuration.appGroupIdentifier)
+        self.hasCompletedOnboarding = ud?.bool(forKey: Configuration.udKeyOnboardingCompleted) ?? false
+        self.hasSeenPaywall = ud?.bool(forKey: "kbHasSeenPaywall") ?? false
         self.userTier = AuthManager.shared.getUserTier()
-        
-        // Register device on first launch
+
         Task {
             if AuthManager.shared.getToken() == nil {
                 try? await AuthManager.shared.register()
             }
         }
     }
-    
+
     func completeOnboarding() {
-        let defaults = UserDefaults(suiteName: Configuration.appGroupIdentifier)
-        defaults?.set(true, forKey: Configuration.udKeyOnboardingCompleted)
+        UserDefaults(suiteName: Configuration.appGroupIdentifier)?
+            .set(true, forKey: Configuration.udKeyOnboardingCompleted)
         withAnimation(.easeInOut(duration: 0.5)) {
             hasCompletedOnboarding = true
         }
