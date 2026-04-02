@@ -59,6 +59,9 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    integrations:
+      app_store_connect: codemagic_api_key
+
     environment:
       ios_signing:
         distribution_type: app_store
@@ -66,9 +69,6 @@ workflows:
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
       xcode: latest
 
     scripts:
