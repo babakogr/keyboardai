@@ -1,0 +1,44 @@
+# Backend secrets - NEVER commit
+backend/.env
+backend/node_modules/
+backend/*.log
+
+# iOS build artifacts
+iOS/*.xcodeproj/xcuserdata/
+iOS/*.xcworkspace/xcuserdata/
+iOS/build/
+iOS/DerivedData/
+iOS/**/.DS_Store
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+
+# CocoaPods
+iOS/Pods/
+
+# Codemagic
+*.p12
+*.mobileprovision
+
+# VS Code
+.vscode/
+
+# Windows
+desktop.ini
