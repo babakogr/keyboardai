@@ -1,20 +1,19 @@
 workflows:
-  ios-development:
-    name: KeyboardAI iOS Build
+
+  # ─────────────────────────────────────────────────────────────────
+  # WORKFLOW 1: Simulator build — NO signing needed, free to run
+  # Use this first to verify the project compiles correctly
+  # ─────────────────────────────────────────────────────────────────
+  ios-simulator:
+    name: KeyboardAI Simulator Build
     max_build_duration: 60
     instance_type: mac_mini_m2
 
     environment:
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.keyboardai.app
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-        BUNDLE_ID: "com.keyboardai.app"
-        KEYBOARD_BUNDLE_ID: "com.keyboardai.app.keyboard"
       xcode: latest
-      cocoapods: default
 
     triggering:
       events:
@@ -24,27 +23,20 @@ workflows:
           include: true
 
     scripts:
-      - name: Set up code signing
+      - name: Build for simulator (no signing)
         script: |
-          xcode-project use-profiles
-
-      - name: Install dependencies (if any)
-        script: |
-          cd iOS
-          if [ -f "Podfile" ]; then
-            pod install
-          fi
-
-      - name: Build iOS app
-        script: |
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean build \
+            | xcpretty
 
     artifacts:
-      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
     publishing:
       email:
@@ -54,8 +46,55 @@ workflows:
           success: true
           failure: true
 
+  # ─────────────────────────────────────────────────────────────────
+  # WORKFLOW 2: Real device .ipa — needs Apple Developer account
+  # Connect Apple Developer in Codemagic → Team → Integrations first
+  # ─────────────────────────────────────────────────────────────────
+  ios-development:
+    name: KeyboardAI Device Build (IPA)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: codemagic_api_key
+
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.keyboardai.app
+      vars:
+        XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
+        XCODE_SCHEME: "KeyboardAI"
+      xcode: latest
+
+    scripts:
+      - name: Set up automatic code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build IPA for device
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
+  # ─────────────────────────────────────────────────────────────────
+  # WORKFLOW 3: TestFlight — needs Apple Developer + App Store Connect
+  # ─────────────────────────────────────────────────────────────────
   ios-testflight:
-    name: KeyboardAI TestFlight Deploy
+    name: KeyboardAI TestFlight
     max_build_duration: 60
     instance_type: mac_mini_m2
 
@@ -66,17 +105,17 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.keyboardai.app
+      xcode: latest
       vars:
         XCODE_PROJECT: "iOS/KeyboardAI.xcodeproj"
         XCODE_SCHEME: "KeyboardAI"
-      xcode: latest
 
     scripts:
       - name: Set up code signing
         script: |
           xcode-project use-profiles
 
-      - name: Build iOS app for App Store
+      - name: Build for App Store
         script: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
