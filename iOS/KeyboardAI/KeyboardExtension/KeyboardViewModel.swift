@@ -14,7 +14,6 @@ enum ShiftState {
     case capsLock
 }
 
-@MainActor
 final class KeyboardViewModel: ObservableObject {
     // MARK: - Text Proxy
     var inputProxy: UITextDocumentProxy?
@@ -38,7 +37,7 @@ final class KeyboardViewModel: ObservableObject {
     // MARK: - Language
     @Published var selectedLanguage: String
     
-    private let aiService = AIService.shared
+    private lazy var aiService = AIService.shared
     
     init() {
         // Defensive: UserDefaults(suiteName:) can return nil if app group isn't configured
@@ -140,90 +139,68 @@ final class KeyboardViewModel: ObservableObject {
     // MARK: - AI Actions
     func performTranslate() {
         let text = getFullText()
-        guard !text.isEmpty else {
-            showErrorBriefly("Type something to translate")
-            return
-        }
-        
+        guard !text.isEmpty else { showErrorBriefly("Type something to translate"); return }
         guard checkUsageLimit() else { return }
-        
-        isProcessing = true
-        aiResult = nil
-        
+
+        DispatchQueue.main.async { self.isProcessing = true; self.aiResult = nil }
+
         Task {
             do {
                 let result = try await aiService.translate(text: text, targetLang: selectedLanguage)
-                replaceAllText(with: result)
-                isProcessing = false
+                await MainActor.run { self.replaceAllText(with: result); self.isProcessing = false }
             } catch {
-                handleAIError(error)
+                await MainActor.run { self.handleAIError(error) }
             }
         }
     }
-    
+
     func performImprove() {
         let text = getFullText()
-        guard !text.isEmpty else {
-            showErrorBriefly("Type something to improve")
-            return
-        }
-        
+        guard !text.isEmpty else { showErrorBriefly("Type something to improve"); return }
         guard checkUsageLimit() else { return }
-        
-        isProcessing = true
-        
+
+        DispatchQueue.main.async { self.isProcessing = true }
+
         Task {
             do {
                 let result = try await aiService.improve(text: text)
-                replaceAllText(with: result)
-                isProcessing = false
+                await MainActor.run { self.replaceAllText(with: result); self.isProcessing = false }
             } catch {
-                handleAIError(error)
+                await MainActor.run { self.handleAIError(error) }
             }
         }
     }
-    
+
     func performFix() {
         let text = getFullText()
-        guard !text.isEmpty else {
-            showErrorBriefly("Type something to fix")
-            return
-        }
-        
+        guard !text.isEmpty else { showErrorBriefly("Type something to fix"); return }
         guard checkUsageLimit() else { return }
-        
-        isProcessing = true
-        
+
+        DispatchQueue.main.async { self.isProcessing = true }
+
         Task {
             do {
                 let result = try await aiService.fix(text: text)
-                replaceAllText(with: result)
-                isProcessing = false
+                await MainActor.run { self.replaceAllText(with: result); self.isProcessing = false }
             } catch {
-                handleAIError(error)
+                await MainActor.run { self.handleAIError(error) }
             }
         }
     }
-    
+
     func performReply() {
         let text = getFullText()
-        guard !text.isEmpty else {
-            showErrorBriefly("Paste a message to generate replies")
-            return
-        }
-        
+        guard !text.isEmpty else { showErrorBriefly("Paste a message to generate replies"); return }
         guard checkUsageLimit() else { return }
-        
-        isProcessing = true
-        aiReplies = []
-        
+
+        DispatchQueue.main.async { self.isProcessing = true; self.aiReplies = [] }
+
         Task {
             do {
                 let replies = try await aiService.generateReplies(text: text)
-                aiReplies = replies
-                isProcessing = false
+                await MainActor.run { self.aiReplies = replies; self.isProcessing = false }
             } catch {
-                handleAIError(error)
+                await MainActor.run { self.handleAIError(error) }
             }
         }
     }
@@ -241,12 +218,12 @@ final class KeyboardViewModel: ObservableObject {
     func loadSuggestions() {
         let text = getFullText()
         guard !text.isEmpty else { return }
-        
+
         Task {
             do {
                 let newSuggestions = try await aiService.getSuggestions(text: text)
                 if !newSuggestions.isEmpty {
-                    suggestions = newSuggestions
+                    await MainActor.run { self.suggestions = newSuggestions }
                 }
             } catch {
                 // Silently fail - keep default suggestions
@@ -285,12 +262,13 @@ final class KeyboardViewModel: ObservableObject {
     }
     
     private func showErrorBriefly(_ message: String) {
-        errorMessage = message
-        showError = true
-        
+        DispatchQueue.main.async {
+            self.errorMessage = message
+            self.showError = true
+        }
         Task {
             try? await Task.sleep(nanoseconds: 2_500_000_000)
-            showError = false
+            await MainActor.run { self.showError = false }
         }
     }
 }
