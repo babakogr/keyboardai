@@ -2,29 +2,36 @@ import SwiftUI
 
 struct MainView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab = 0
+    @State private var selectedTab: Tab = .home
+
+    enum Tab: String {
+        case home, tryit, settings
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeTab()
                 .environmentObject(appState)
                 .tabItem {
-                    Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
+                    Image(systemName: "house.fill")
+                    Text("Home")
                 }
-                .tag(0)
+                .tag(Tab.home)
 
             ChatTestView()
                 .tabItem {
-                    Label("Try It", systemImage: selectedTab == 1 ? "keyboard.fill" : "keyboard")
+                    Image(systemName: "keyboard.fill")
+                    Text("Try It")
                 }
-                .tag(1)
+                .tag(Tab.tryit)
 
             SettingsTabView()
                 .environmentObject(appState)
                 .tabItem {
-                    Label("Settings", systemImage: selectedTab == 2 ? "gearshape.fill" : "gearshape")
+                    Image(systemName: "gearshape.fill")
+                    Text("Settings")
                 }
-                .tag(2)
+                .tag(Tab.settings)
         }
         .tint(.kbAccent)
     }
@@ -37,40 +44,21 @@ struct HomeTab: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.kbBackground.ignoresSafeArea()
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        headerCard
-                        if !AuthManager.shared.isPro { usageCard }
-                        keyboardSetupCard
-                        featuresGrid
-                        if !AuthManager.shared.isPro { upgradeBanner }
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 8)
-                    .padding(.bottom, 32)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    headerCard
+                    if !AuthManager.shared.isPro { usageSection }
+                    keyboardSetupSection
+                    featuresSection
+                    if !AuthManager.shared.isPro { upgradeBanner }
+                    privacyNote
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 32)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 8) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(LinearGradient(colors: [.kbGradientStart, .kbGradientEnd], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 28, height: 28)
-                            Image(systemName: "keyboard.fill")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                        Text("KeyboardAI")
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
-                            .foregroundColor(.kbLabel)
-                    }
-                }
-            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("KeyboardAI")
             .sheet(isPresented: $showProUpgrade) {
                 ProUpgradeView(isHardPaywall: false)
                     .environmentObject(appState)
@@ -80,231 +68,244 @@ struct HomeTab: View {
 
     // MARK: - Header Card
     private var headerCard: some View {
-        ZStack {
-            LinearGradient(
-                colors: [.kbGradientStart, .kbGradientEnd],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            .cornerRadius(20)
+        ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [.kbGradientStart, .kbGradientEnd],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
 
-            HStack(spacing: 16) {
+            // Decorative circles
+            Circle()
+                .fill(Color.white.opacity(0.08))
+                .frame(width: 140, height: 140)
+                .offset(x: 220, y: -40)
+            Circle()
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 100, height: 100)
+                .offset(x: 260, y: 30)
+
+            HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(AuthManager.shared.isPro ? "Pro Member ✨" : "Free Plan")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.8))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                    Text(AuthManager.shared.isPro ? "PRO" : "FREE")
+                        .font(.system(size: 11, weight: .heavy))
+                        .tracking(1)
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
                         .background(Color.white.opacity(0.2))
-                        .cornerRadius(8)
+                        .clipShape(Capsule())
 
-                    Text("AI typing at\nyour fingertips")
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    Text("AI Typing at\nYour Fingertips")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
-                        .lineSpacing(3)
+                        .lineSpacing(2)
 
                     if !AuthManager.shared.isPro {
-                        Text("\(UsageTracker.shared.remainingFreeUses) uses left today")
+                        Text("\(UsageTracker.shared.remainingFreeUses) actions left today")
                             .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.75))
+                            .foregroundColor(.white.opacity(0.7))
                     }
                 }
-
                 Spacer()
-
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.15))
-                        .frame(width: 72, height: 72)
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 30, weight: .semibold))
-                        .foregroundColor(.white)
-                }
             }
             .padding(22)
         }
-        .frame(height: 150)
+        .frame(height: 160)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    // MARK: - Usage Card
-    private var usageCard: some View {
-        VStack(spacing: 14) {
+    // MARK: - Usage Section
+    private var usageSection: some View {
+        VStack(spacing: 12) {
             HStack {
-                Text("Today's Usage")
-                    .font(.system(size: 15, weight: .semibold))
+                Label("Today's Usage", systemImage: "chart.bar.fill")
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.kbLabel)
                 Spacer()
-                Text("\(UsageTracker.shared.dailyUsageCount) / \(Configuration.freeDailyLimit)")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                Text("\(UsageTracker.shared.dailyUsageCount)/\(Configuration.freeDailyLimit)")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(.kbAccent)
             }
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.kbSeparator.opacity(0.25)).frame(height: 8)
+                    Capsule().fill(Color(.systemFill)).frame(height: 8)
                     Capsule()
                         .fill(LinearGradient(colors: [.kbGradientStart, .kbGradientEnd], startPoint: .leading, endPoint: .trailing))
-                        .frame(
-                            width: max(8, geo.size.width * CGFloat(UsageTracker.shared.dailyUsageCount) / CGFloat(max(1, Configuration.freeDailyLimit))),
-                            height: 8
-                        )
+                        .frame(width: max(8, geo.size.width * CGFloat(UsageTracker.shared.dailyUsageCount) / CGFloat(max(1, Configuration.freeDailyLimit))), height: 8)
                 }
             }
             .frame(height: 8)
 
-            HStack {
-                Text("\(UsageTracker.shared.remainingFreeUses) AI actions remaining")
-                    .font(.system(size: 12))
-                    .foregroundColor(.kbSecondaryLabel)
-                Spacer()
-                Text("Resets at midnight")
-                    .font(.system(size: 11))
-                    .foregroundColor(.kbSecondaryLabel.opacity(0.6))
-            }
+            Text("\(UsageTracker.shared.remainingFreeUses) AI actions remaining · Resets at midnight")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .cardStyle()
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    // MARK: - Keyboard Setup Card
-    private var keyboardSetupCard: some View {
+    // MARK: - Keyboard Setup Section
+    private var keyboardSetupSection: some View {
         VStack(spacing: 14) {
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.kbAccentLight)
-                        .frame(width: 40, height: 40)
-                    Image(systemName: "keyboard.badge.ellipsis.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.kbAccent)
-                }
+                Image(systemName: "keyboard.badge.ellipsis")
+                    .font(.system(size: 22))
+                    .foregroundColor(.kbAccent)
+                    .frame(width: 40, height: 40)
+                    .background(Color.kbAccent.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Keyboard Setup")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.kbLabel)
-                    Text("Enable KeyboardAI on your iPhone")
+                    Text("Add KeyboardAI to your keyboards")
                         .font(.system(size: 12))
-                        .foregroundColor(.kbSecondaryLabel)
+                        .foregroundColor(.secondary)
                 }
                 Spacer()
             }
 
-            VStack(spacing: 6) {
-                setupStep("1", "Settings → General → Keyboard → Keyboards")
-                setupStep("2", "Add New Keyboard → Select KeyboardAI")
-                setupStep("3", "Enable Allow Full Access")
+            VStack(spacing: 8) {
+                nativeStep("1", "Open", "Settings → General → Keyboard → Keyboards")
+                nativeStep("2", "Tap", "Add New Keyboard → Select KeyboardAI")
+                nativeStep("3", "Enable", "Allow Full Access → Tap Allow")
             }
 
-            Button(action: {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.up.right.square.fill")
-                        .font(.system(size: 15))
-                    Text("Open iPhone Settings")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(
-                    LinearGradient(colors: [.kbGradientStart, .kbGradientEnd], startPoint: .leading, endPoint: .trailing)
-                )
-                .cornerRadius(12)
+            Button(action: openKeyboardSettings) {
+                Label("Open Keyboard Settings", systemImage: "arrow.up.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(.kbAccent)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .cardStyle()
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private func setupStep(_ n: String, _ text: String) -> some View {
+    private func nativeStep(_ n: String, _ bold: String, _ text: String) -> some View {
         HStack(spacing: 10) {
             Text(n)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
-                .frame(width: 20, height: 20)
+                .frame(width: 22, height: 22)
                 .background(Color.kbAccent)
                 .clipShape(Circle())
-            Text(text)
-                .font(.system(size: 12))
-                .foregroundColor(.kbSecondaryLabel)
+            Group {
+                Text(bold).fontWeight(.semibold) + Text("  \(text)")
+            }
+            .font(.system(size: 13))
+            .foregroundColor(.secondary)
             Spacer()
         }
     }
 
-    // MARK: - Features Grid
-    private var featuresGrid: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func openKeyboardSettings() {
+        if let url = URL(string: "App-prefs:General&path=Keyboard") {
+            UIApplication.shared.open(url)
+        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    // MARK: - Features Section
+    private var featuresSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Features")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.kbLabel)
 
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 featureCell("globe", "Translate", "14 languages", .blue)
-                featureCell("wand.and.stars", "Improve", "Rewrite instantly", .purple)
-                featureCell("checkmark.circle.fill", "Fix Grammar", "Perfect writing", .green)
-                featureCell("bubble.left.and.bubble.right.fill", "Smart Reply", "3 options fast", .orange)
+                featureCell("wand.and.stars", "Improve", "Rewrite text", .purple)
+                featureCell("checkmark.circle.fill", "Fix Grammar", "Auto-correct", .green)
+                featureCell("bubble.left.and.bubble.right.fill", "Smart Reply", "AI responses", .orange)
             }
         }
     }
 
     private func featureCell(_ icon: String, _ title: String, _ desc: String, _ color: Color) -> some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.12))
-                    .frame(width: 48, height: 48)
-                Image(systemName: icon)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(color)
-            }
-            VStack(spacing: 3) {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(color.gradient)
+                .frame(width: 48, height: 48)
+                .background(color.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.kbLabel)
                 Text(desc)
                     .font(.system(size: 11))
-                    .foregroundColor(.kbSecondaryLabel)
+                    .foregroundColor(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 18)
-        .background(Color.kbSecondaryBg)
-        .cornerRadius(16)
+        .padding(.vertical, 16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: - Upgrade Banner
     private var upgradeBanner: some View {
         Button(action: { showProUpgrade = true }) {
             HStack(spacing: 14) {
-                ZStack {
-                    Circle().fill(Color.yellow.opacity(0.2)).frame(width: 44, height: 44)
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.yellow)
-                }
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.yellow.gradient)
+                    .frame(width: 44, height: 44)
+                    .background(Color.yellow.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Upgrade to Pro")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                     Text("Unlimited · All languages · Priority speed")
                         .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.75))
+                        .foregroundColor(.white.opacity(0.7))
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.5))
             }
-            .padding(18)
+            .padding(16)
             .background(
                 LinearGradient(
                     colors: [Color(red: 0.4, green: 0.25, blue: 0.9), Color(red: 0.65, green: 0.2, blue: 0.85)],
                     startPoint: .leading, endPoint: .trailing
                 )
             )
-            .cornerRadius(16)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
+    }
+
+    // MARK: - Privacy Note
+    private var privacyNote: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(Color.green.gradient)
+            Text("Your text is never stored. AI processes only when you tap.")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 

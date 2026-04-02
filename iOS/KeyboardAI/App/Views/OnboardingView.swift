@@ -105,7 +105,10 @@ struct OnboardingView: View {
     }
 
     private func openSettings() {
-        if let url = URL(string: UIApplication.openSettingsURLString) {
+        // Try to open General > Keyboard settings directly
+        if let url = URL(string: "App-prefs:General&path=Keyboard") {
+            UIApplication.shared.open(url)
+        } else if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
         withAnimation(.spring(response: 0.5).delay(0.3)) {

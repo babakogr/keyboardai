@@ -7,83 +7,83 @@ struct ChatTestView: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        ZStack {
-            Color.kbBackground.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color.kbBackground.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 4) {
-                    Text("Try KeyboardAI")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(.kbLabel)
-                    Text("Activate KeyboardAI keyboard while typing below")
-                        .font(.system(size: 12))
-                        .foregroundColor(.kbSecondaryLabel)
-                }
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-                .background(Color.kbSecondaryBg)
+                VStack(spacing: 0) {
+                    // Message list
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                if showTip { tipBanner }
 
-                Divider()
-
-                // Message list
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            if showTip { tipBanner }
-
-                            LazyVStack(spacing: 12) {
-                                ForEach(messages) { msg in
-                                    messageBubble(msg)
-                                        .id(msg.id)
+                                LazyVStack(spacing: 12) {
+                                    ForEach(messages) { msg in
+                                        messageBubble(msg)
+                                            .id(msg.id)
+                                    }
                                 }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                            .padding(.bottom, 8)
-
-                            keyboardGuideCard
                                 .padding(.horizontal, 16)
-                                .padding(.bottom, 16)
+                                .padding(.top, 12)
+                                .padding(.bottom, 8)
 
-                            Color.clear.frame(height: 1).id("bottom")
+                                keyboardGuideCard
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 16)
+
+                                Color.clear.frame(height: 1).id("bottom")
+                            }
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                        .onTapGesture { isFocused = false }
+                        .onChange(of: messages.count) { _ in
+                            withAnimation { proxy.scrollTo("bottom") }
                         }
                     }
-                    .onChange(of: messages.count) { _ in
-                        withAnimation { proxy.scrollTo("bottom") }
-                    }
-                }
 
-                Divider()
+                    Divider()
 
-                // Input bar
-                HStack(alignment: .bottom, spacing: 10) {
-                    TextField("Type here and switch to KeyboardAI...", text: $inputText, axis: .vertical)
-                        .font(.system(size: 15))
-                        .foregroundColor(.kbLabel)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.kbSecondaryBg)
-                        .cornerRadius(22)
-                        .lineLimit(1...5)
-                        .focused($isFocused)
+                    // Input bar
+                    HStack(alignment: .bottom, spacing: 10) {
+                        TextField("Type here and switch to KeyboardAI...", text: $inputText, axis: .vertical)
+                            .font(.system(size: 15))
+                            .foregroundColor(.kbLabel)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(22)
+                            .lineLimit(1...5)
+                            .focused($isFocused)
 
-                    if !inputText.trimmingCharacters(in: .whitespaces).isEmpty {
-                        Button(action: sendMessage) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 36))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.kbGradientStart, .kbGradientEnd],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                        if !inputText.trimmingCharacters(in: .whitespaces).isEmpty {
+                            Button(action: sendMessage) {
+                                Image(systemName: "arrow.up.circle.fill")
+                                    .font(.system(size: 36))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [.kbGradientStart, .kbGradientEnd],
+                                            startPoint: .topLeading, endPoint: .bottomTrailing
+                                        )
                                     )
-                                )
+                            }
                         }
                     }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color.kbBackground)
+            }
+            .navigationTitle("Try It")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if isFocused {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { isFocused = false }
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                }
             }
         }
     }

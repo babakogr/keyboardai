@@ -105,15 +105,37 @@ workflows:
 
       - name: Package into .ipa file
         script: |
-          # Find the .app and package it as .ipa
-          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" | head -1)
+          # Find the .app bundle
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "KeyboardAI.app" -type d | head -1)
           echo "Found app at: $APP_PATH"
+
+          # Verify keyboard extension is embedded
+          if [ -d "$APP_PATH/PlugIns" ]; then
+            echo "✅ PlugIns directory found:"
+            ls -la "$APP_PATH/PlugIns/"
+          else
+            echo "⚠️ No PlugIns dir — searching for .appex to embed manually"
+            APPEX_PATH=$(find build/Build/Products/Release-iphoneos -name "KeyboardExtension.appex" -type d | head -1)
+            if [ -n "$APPEX_PATH" ]; then
+              mkdir -p "$APP_PATH/PlugIns"
+              cp -r "$APPEX_PATH" "$APP_PATH/PlugIns/"
+              echo "✅ Manually embedded KeyboardExtension.appex"
+            else
+              echo "❌ ERROR: KeyboardExtension.appex not found!"
+            fi
+          fi
+
+          # Package as IPA
           mkdir -p Payload
           cp -r "$APP_PATH" Payload/
           zip -r KeyboardAI-unsigned.ipa Payload/
           rm -rf Payload
           echo "✅ IPA created: KeyboardAI-unsigned.ipa"
           ls -lh KeyboardAI-unsigned.ipa
+
+          # Verify contents
+          echo "--- IPA Contents ---"
+          unzip -l KeyboardAI-unsigned.ipa | grep -E "(\.app/|PlugIns|\.appex)"
 
     artifacts:
       - KeyboardAI-unsigned.ipa
